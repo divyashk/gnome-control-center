@@ -135,6 +135,7 @@ struct _CcPowerPanel
   guint          power_profiles_prop_id;
   CcPowerProfileRow *power_profiles_row[NUM_CC_POWER_PROFILES];
   gboolean       power_profiles_in_update;
+  gboolean       has_performance_degraded;
 
 #ifdef HAVE_NETWORK_MANAGER
   NMClient      *nm_client;
@@ -1368,6 +1369,18 @@ performance_profile_set_inhibited (CcPowerPanel  *self,
 }
 
 static void
+performance_profile_set_degraded (CcPowerPanel  *self,
+                                  const char    *performance_degraded)
+{
+  CcPowerProfileRow *row;
+
+  row = self->power_profiles_row[CC_POWER_PROFILE_PERFORMANCE];
+  if (!row)
+      return;
+  cc_power_profile_row_set_performance_degraded (row, performance_degraded);
+}
+
+static void
 power_profiles_row_activated_cb (GtkListBox    *box,
                                  GtkListBoxRow *box_row,
                                  gpointer       user_data)
@@ -1422,8 +1435,14 @@ power_profiles_properties_changed_cb (CcPowerPanel *self,
     {
       if (g_strcmp0 (key, "PerformanceInhibited") == 0)
         {
-          performance_profile_set_inhibited (self,
-                                             g_variant_get_string (value, NULL));
+          if (!self->has_performance_degraded)
+            performance_profile_set_inhibited (self,
+                                               g_variant_get_string (value, NULL));
+        }
+      else if (g_strcmp0 (key, "PerformanceDegraded") == 0)
+        {
+          performance_profile_set_degraded (self,
+                                            g_variant_get_string (value, NULL));
         }
       else if (g_strcmp0 (key, "ActiveProfile") == 0)
         {
@@ -1506,7 +1525,8 @@ setup_power_profiles (CcPowerPanel *self)
   g_autoptr(GVariant) props = NULL;
   guint i, num_children;
   g_autoptr(GError) error = NULL;
-  const char *performance_inhibited;
+  const char *performance_inhibited = NULL;
+  const char *performance_degraded;
   const char *active_profile;
   g_autoptr(GVariant) profiles = NULL;
   GtkRadioButton *last_button;
@@ -1561,7 +1581,10 @@ setup_power_profiles (CcPowerPanel *self)
   self->boxes_reverse = g_list_prepend (self->boxes_reverse, self->power_profile_listbox);
 
   props = g_variant_get_child_value (variant, 0);
-  performance_inhibited = variant_lookup_string (props, "PerformanceInhibited");
+  performance_degraded = variant_lookup_string (props, "PerformanceDegraded");
+  self->has_performance_degraded = performance_degraded != NULL;
+  if (performance_degraded == NULL)
+    performance_inhibited = variant_lookup_string (props, "PerformanceInhibited");
   active_profile = variant_lookup_string (props, "ActiveProfile");
 
   last_button = NULL;
@@ -1588,7 +1611,10 @@ setup_power_profiles (CcPowerPanel *self)
 
       profile = cc_power_profile_from_str (name);
       row = cc_power_profile_row_new (cc_power_profile_from_str (name));
-      cc_power_profile_row_set_performance_inhibited (row, performance_inhibited);
+      if (performance_degraded)
+        cc_power_profile_row_set_performance_degraded (row, performance_degraded);
+      else
+        cc_power_profile_row_set_performance_inhibited (row, performance_inhibited);
       g_signal_connect_object (G_OBJECT (row), "button-toggled",
                                G_CALLBACK (power_profile_button_toggled_cb), self,
                                0);
