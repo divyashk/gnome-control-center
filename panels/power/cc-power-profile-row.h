@@ -45,7 +45,9 @@ GtkRadioButton *cc_power_profile_row_get_radio_button (CcPowerProfileRow *row);
 void cc_power_profile_row_set_active                  (CcPowerProfileRow *row, gboolean active);
 gboolean cc_power_profile_row_get_active              (CcPowerProfileRow *row);
 void cc_power_profile_row_set_performance_inhibited   (CcPowerProfileRow *row,
-                                                       const char        *performance_inhibited);
+                                                       const char        *subtitle_value);
+void cc_power_profile_row_set_performance_degraded    (CcPowerProfileRow *row,
+                                                       const char        *subtitle_value);
 
 CcPowerProfile cc_power_profile_from_str (const char *profile);
 const char *cc_power_profile_to_str      (CcPowerProfile profile);

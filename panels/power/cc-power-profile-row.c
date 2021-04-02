@@ -30,6 +30,11 @@
 #include <glib/gi18n.h>
 #include "cc-power-profile-row.h"
 
+typedef enum {
+  SUBTITLE_INHIBITED,
+  SUBTITLE_DEGRADED
+} SubtitleType;
+
 struct _CcPowerProfileRow
 {
   GtkListBoxRow parent_instance;
@@ -39,8 +44,9 @@ struct _CcPowerProfileRow
   GtkLabel       *subtitle_label;
   GtkLabel       *title_label;
 
-  CcPowerProfile power_profile;
-  char *performance_inhibited;
+  CcPowerProfile  power_profile;
+  char           *subtitle_value;
+  SubtitleType    subtitle_type;
 };
 
 G_DEFINE_TYPE (CcPowerProfileRow, cc_power_profile_row, GTK_TYPE_LIST_BOX_ROW)
@@ -53,24 +59,32 @@ enum {
 static guint signals[N_SIGNALS];
 
 static const char *
-get_performance_inhibited_text (const char *inhibited)
+get_subtitle_text (const char   *subtitle_value,
+                   SubtitleType  subtitle_type)
 {
-  if (!inhibited || *inhibited == '\0')
+  if (!subtitle_value || *subtitle_value == '\0')
     return NULL;
 
-  if (g_str_equal (inhibited, "lap-detected"))
-    return _("Lap detected: performance mode unavailable");
-  if (g_str_equal (inhibited, "high-operating-temperature"))
-    return _("High hardware temperature: performance mode unavailable");
-  return _("Performance mode unavailable");
+  if (g_str_equal (subtitle_value, "lap-detected"))
+    if (subtitle_type == SUBTITLE_INHIBITED)
+      return _("Lap detected: performance mode unavailable");
+    else
+      return _("Lap detected: performance mode degraded");
+  if (g_str_equal (subtitle_value, "high-operating-temperature"))
+    if (subtitle_type == SUBTITLE_INHIBITED)
+      return _("High hardware temperature: performance mode unavailable");
+    else
+      return _("High hardware temperature: performance mode degraded");
+  if (subtitle_type == SUBTITLE_INHIBITED)
+    return _("Performance mode unavailable");
+  return _("Performance mode degraded");
 }
 
 static void
-performance_profile_set_inhibited (CcPowerProfileRow *self,
-                                   const char        *performance_inhibited)
+performance_profile_set_subtitle (CcPowerProfileRow *self)
 {
   const char *text;
-  gboolean inhibited = FALSE;
+  gboolean state = FALSE;
 
   if (self->power_profile != CC_POWER_PROFILE_PERFORMANCE)
     return;
@@ -80,16 +94,22 @@ performance_profile_set_inhibited (CcPowerProfileRow *self,
   gtk_style_context_remove_class (gtk_widget_get_style_context (GTK_WIDGET (self->subtitle_label)),
                                   GTK_STYLE_CLASS_ERROR);
 
-  text = get_performance_inhibited_text (performance_inhibited);
+  text = get_subtitle_text (self->subtitle_value, self->subtitle_type);
   if (text)
-    inhibited = TRUE;
+    state = TRUE;
   else
     text = _("High performance and power usage.");
   gtk_label_set_text (GTK_LABEL (self->subtitle_label), text);
 
-  gtk_style_context_add_class (gtk_widget_get_style_context (GTK_WIDGET (self->subtitle_label)),
-                               inhibited ? GTK_STYLE_CLASS_ERROR : GTK_STYLE_CLASS_DIM_LABEL);
-  gtk_widget_set_sensitive (GTK_WIDGET (self), !inhibited);
+  if (self->subtitle_type == SUBTITLE_INHIBITED) {
+    gtk_style_context_add_class (gtk_widget_get_style_context (GTK_WIDGET (self->subtitle_label)),
+                                 state ? GTK_STYLE_CLASS_ERROR : GTK_STYLE_CLASS_DIM_LABEL);
+    gtk_widget_set_sensitive (GTK_WIDGET (self), !state);
+  } else {
+    gtk_style_context_add_class (gtk_widget_get_style_context (GTK_WIDGET (self->subtitle_label)),
+                                 state ? GTK_STYLE_CLASS_ERROR : GTK_STYLE_CLASS_DIM_LABEL);
+    gtk_widget_set_sensitive (GTK_WIDGET (self), TRUE);
+  }
 }
 
 static void
@@ -154,13 +174,26 @@ cc_power_profile_row_set_active (CcPowerProfileRow *self,
 
 void
 cc_power_profile_row_set_performance_inhibited (CcPowerProfileRow *self,
-                                                const char        *performance_inhibited)
+                                                const char        *subtitle_value)
 {
   g_return_if_fail (CC_IS_POWER_PROFILE_ROW (self));
 
-  g_clear_pointer (&self->performance_inhibited, g_free);
-  self->performance_inhibited = g_strdup (performance_inhibited);
-  performance_profile_set_inhibited (self, self->performance_inhibited);
+  g_clear_pointer (&self->subtitle_value, g_free);
+  self->subtitle_value = g_strdup (subtitle_value);
+  self->subtitle_type = SUBTITLE_INHIBITED;
+  performance_profile_set_subtitle (self);
+}
+
+void
+cc_power_profile_row_set_performance_degraded (CcPowerProfileRow *self,
+                                               const char        *subtitle_value)
+{
+  g_return_if_fail (CC_IS_POWER_PROFILE_ROW (self));
+
+  g_clear_pointer (&self->subtitle_value, g_free);
+  self->subtitle_value = g_strdup (subtitle_value);
+  self->subtitle_type = SUBTITLE_DEGRADED;
+  performance_profile_set_subtitle (self);
 }
 
 gboolean
