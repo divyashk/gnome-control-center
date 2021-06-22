@@ -1179,10 +1179,10 @@ cc_printers_panel_init (CcPrintersPanel *self)
   GtkWidget              *top_widget;
   GtkWidget              *widget;
   g_autoptr(GError)       error = NULL;
-  gchar                  *objects[] = { "overlay", "permission-infobar", "top-right-buttons", "printer-add-button", "search-button", NULL };
+  gchar                  *objects[] = { "overlay", "permission-infobar", "top-right-buttons", "printer-add-button", "search-button", NULL }; // creating an array of strings that are name of the objects, the objects are not itself declared.
   guint                   builder_result;
 
-  g_resources_register (cc_printers_get_resource ());
+  g_resources_register (cc_printers_get_resource ());  // to understand
 
   /* initialize main data structure */
   self->builder = gtk_builder_new ();
