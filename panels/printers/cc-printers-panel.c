@@ -960,6 +960,22 @@ printer_add_cb (CcPrintersPanel *self)
                            self,
                            G_CONNECT_SWAPPED);
 }
+static void
+dns_sd_button_cb(CcPrintersPanel *self){
+    GtkWidget *message_dialog;
+
+    message_dialog = gtk_message_dialog_new (NULL,
+                                           0,
+                                           GTK_MESSAGE_ERROR,
+                                           GTK_BUTTONS_CLOSE,
+    /* Translators: Addition of the new printer failed. */
+                                           _("Clicked the dns-sd button!"));
+    g_signal_connect (message_dialog,
+                    "response",
+                    G_CALLBACK (gtk_widget_destroy),
+                    NULL);
+    gtk_widget_show (message_dialog);
+}
 
 static void
 update_sensitivity (gpointer user_data)
@@ -999,6 +1015,9 @@ update_sensitivity (gpointer user_data)
 
   widget = (GtkWidget*) gtk_builder_get_object (self->builder, "printer-add-button2");
   gtk_widget_set_sensitive (widget, local_server && self->is_authorized && !no_cups && !self->new_printer_name);
+
+  widget = (GtkWidget*) gtk_builder_get_object (self->builder, "dns-sd-button");
+
 }
 
 static void
@@ -1236,6 +1255,10 @@ cc_printers_panel_init (CcPrintersPanel *self)
   widget = (GtkWidget*)
     gtk_builder_get_object (self->builder, "printer-add-button2");
   g_signal_connect_object (widget, "clicked", G_CALLBACK (printer_add_cb), self, G_CONNECT_SWAPPED);
+
+  widget = (GtkWidget*)
+    gtk_builder_get_object (self->builder, "dns-sd-button");
+  g_signal_connect_object (widget, "clicked", G_CALLBACK (dns_sd_button_cb), self, G_CONNECT_SWAPPED);
 
   widget = (GtkWidget*)
     gtk_builder_get_object (self->builder, "content");
