@@ -106,6 +106,8 @@ struct _CcPrintersPanel
   GVariant   *action;
 
   GtkSizeGroup *size_group;
+
+  GtkListBox* list_serv;
 };
 
 CC_PANEL_REGISTER (CcPrintersPanel, cc_printers_panel)
@@ -962,19 +964,30 @@ printer_add_cb (CcPrintersPanel *self)
 }
 static void
 dns_sd_button_cb(CcPrintersPanel *self){
-    GtkWidget *message_dialog;
 
-    message_dialog = gtk_message_dialog_new (NULL,
-                                           0,
-                                           GTK_MESSAGE_ERROR,
-                                           GTK_BUTTONS_CLOSE,
-    /* Translators: Addition of the new printer failed. */
-                                           _("Clicked the dns-sd button!"));
-    g_signal_connect (message_dialog,
-                    "response",
-                    G_CALLBACK (gtk_widget_destroy),
-                    NULL);
-    gtk_widget_show (message_dialog);
+    //TODO: need to consider more appropriate naming
+    GtkWidget* dns_window = (GtkWidget*) gtk_builder_get_object (self->builder, "dw_top_box");
+    gtk_widget_show (GTK_WIDGET (dns_window));
+
+}
+
+static void
+dw_left_add_btn_cb(CcPrintersPanel * self){
+    GtkLabel* row_list_label = (GtkLabel*) gtk_builder_get_object (self->builder, "list_entry_label");
+
+    GtkEntry* text_entry_to_add = (GtkEntry*) gtk_builder_get_object (self->builder, "dw_left_enter_text");
+
+    // debug
+    if ( self->list_serv == NULL || row_list_label == NULL) g_debug ("One of object for generating the list did'nt load up in the builder");
+
+    gtk_label_set_label (row_list_label, gtk_entry_get_text (text_entry_to_add));
+
+    gtk_entry_set_text(text_entry_to_add,"");
+
+    GtkWidget* row_list = (GtkWidget*) gtk_builder_get_object (self->builder, "list_entry");
+
+    gtk_list_box_insert (self->list_serv, row_list, -1);
+
 }
 
 static void
@@ -1015,8 +1028,6 @@ update_sensitivity (gpointer user_data)
 
   widget = (GtkWidget*) gtk_builder_get_object (self->builder, "printer-add-button2");
   gtk_widget_set_sensitive (widget, local_server && self->is_authorized && !no_cups && !self->new_printer_name);
-
-  widget = (GtkWidget*) gtk_builder_get_object (self->builder, "dns-sd-button");
 
 }
 
@@ -1198,7 +1209,8 @@ cc_printers_panel_init (CcPrintersPanel *self)
   GtkWidget              *top_widget;
   GtkWidget              *widget;
   g_autoptr(GError)       error = NULL;
-  gchar                  *objects[] = { "overlay", "permission-infobar", "top-right-buttons", "printer-add-button", "search-button", NULL };
+  gchar                  *objects[] = { "overlay", "permission-infobar", "top-right-buttons", "printer-add-button", "search-button", NULL }; // creating an array of strings that are name of the objects, the objects are not itself declared.
+  gchar                  *dns_objects[] = {"dw_top_box","list_entry","list_entry_label", NULL};
   guint                   builder_result;
 
   g_resources_register (cc_printers_get_resource ());
@@ -1221,6 +1233,18 @@ cc_printers_panel_init (CcPrintersPanel *self)
   builder_result = gtk_builder_add_objects_from_resource (self->builder,
                                                           "/org/gnome/control-center/printers/printers.ui",
                                                           objects, &error);
+
+  if (builder_result == 0)
+    {
+      /* Translators: The XML file containing user interface can not be loaded */
+      g_warning (_("Could not load ui: %s"), error->message);
+      return;
+    }
+
+  // first had to create a new directive for pp-dns.ui in printers.gresource.xml so that the binary is created
+  builder_result = gtk_builder_add_objects_from_resource (self->builder,
+                                                          "/org/gnome/control-center/printers/pp-dns.ui" ,
+                                                          dns_objects, &error);
 
   if (builder_result == 0)
     {
@@ -1259,6 +1283,12 @@ cc_printers_panel_init (CcPrintersPanel *self)
   widget = (GtkWidget*)
     gtk_builder_get_object (self->builder, "dns-sd-button");
   g_signal_connect_object (widget, "clicked", G_CALLBACK (dns_sd_button_cb), self, G_CONNECT_SWAPPED);
+
+  widget = (GtkWidget*)
+    gtk_builder_get_object (self->builder, "dw_left_add_btn");
+  g_signal_connect_object (widget, "clicked", G_CALLBACK (dw_left_add_btn_cb), self, G_CONNECT_SWAPPED);
+
+  self->list_serv =  (GtkListBox*) gtk_builder_get_object(self->builder, "dw_right_list");
 
   widget = (GtkWidget*)
     gtk_builder_get_object (self->builder, "content");
