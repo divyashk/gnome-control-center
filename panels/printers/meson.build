@@ -36,7 +36,8 @@ sources = files(
   'pp-printer-entry.c',
   'pp-printer.c',
   'pp-samba.c',
-  'pp-utils.c'
+  'pp-utils.c',
+  'pp-dns-row.c'
 )
 
 resource_data = files(
@@ -48,7 +49,9 @@ resource_data = files(
   'pp-jobs-dialog.ui',
   'pp-options-dialog.ui',
   'printer-entry.ui',
-  'printers.ui'
+  'printers.ui',
+  'pp-dns-row.ui',
+  'pp-dns.ui'
 )
 
 sources += gnome.compile_resources(

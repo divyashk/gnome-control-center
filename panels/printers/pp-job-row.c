@@ -69,7 +69,7 @@ pp_job_row_class_init (PpJobRowClass *klass)
 {
   GObjectClass *object_class = G_OBJECT_CLASS (klass);
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
-
+  
   object_class->dispose = pp_job_row_dispose;
 
   gtk_widget_class_set_template_from_resource (widget_class, "/org/gnome/control-center/printers/pp-job-row.ui");
@@ -78,7 +78,7 @@ pp_job_row_class_init (PpJobRowClass *klass)
   gtk_widget_class_bind_template_child (widget_class, PpJobRow, pause_image);
   gtk_widget_class_bind_template_child (widget_class, PpJobRow, state_label);
   gtk_widget_class_bind_template_child (widget_class, PpJobRow, title_label);
-
+  
   gtk_widget_class_bind_template_callback (widget_class, pause_cb);
   gtk_widget_class_bind_template_callback (widget_class, stop_cb);
 }

@@ -27,7 +27,8 @@
         "cflags" : "-O2 -g",
         "cxxflags" : "-O2 -g",
         "env" : {
-            "V" : "1"
+            "V" : "1",
+            "GTK_THEME" : "Adwaita"
         }
     },
     "x-run-args" : [
@@ -58,13 +59,15 @@
             ]
         },
         {
-            "name": "intltool",
-            "cleanup": [ "*" ],
-            "sources": [
+            "name" : "intltool",
+            "cleanup" : [
+                "*"
+            ],
+            "sources" : [
                 {
-                    "type": "archive",
-                    "url": "https://launchpad.net/intltool/trunk/0.51.0/+download/intltool-0.51.0.tar.gz",
-                    "sha256": "67c74d94196b153b774ab9f89b2fa6c6ba79352407037c8c14d5aeb334e959cd"
+                    "type" : "archive",
+                    "url" : "https://launchpad.net/intltool/trunk/0.51.0/+download/intltool-0.51.0.tar.gz",
+                    "sha256" : "67c74d94196b153b774ab9f89b2fa6c6ba79352407037c8c14d5aeb334e959cd"
                 }
             ]
         },
@@ -278,9 +281,9 @@
             "name" : "geocode-glib",
             "buildsystem" : "meson",
             "config-opts" : [
-            	"-Denable-gtk-doc=false",
-            	"-Denable-introspection=false",
-            	"-Denable-installed-tests=false"
+                "-Denable-gtk-doc=false",
+                "-Denable-introspection=false",
+                "-Denable-installed-tests=false"
             ],
             "sources" : [
                 {
@@ -293,9 +296,9 @@
             "name" : "libgweather",
             "buildsystem" : "meson",
             "config-opts" : [
-            	"-Dglade_catalog=false",
-            	"-Denable_vala=false",
-            	"-Dgtk_doc=false"
+                "-Dglade_catalog=false",
+                "-Denable_vala=false",
+                "-Dgtk_doc=false"
             ],
             "sources" : [
                 {
@@ -308,11 +311,11 @@
             "name" : "upower",
             "buildsystem" : "autotools",
             "config-opts" : [
-            	"--prefix=/app",
-            	"--with-systemdsystemunitdir=/app/lib/systemd/system",
-            	"--disable-gtk-doc",
-            	"--disable-man-pages",
-            	"--disable-tests"
+                "--prefix=/app",
+                "--with-systemdsystemunitdir=/app/lib/systemd/system",
+                "--disable-gtk-doc",
+                "--disable-man-pages",
+                "--disable-tests"
             ],
             "sources" : [
                 {
@@ -376,7 +379,7 @@
             "sources" : [
                 {
                     "type" : "git",
-                    "branch": "main",
+                    "branch" : "main",
                     "url" : "https://gitlab.freedesktop.org/NetworkManager/NetworkManager.git"
                 }
             ]
@@ -455,17 +458,17 @@
                     "url" : "https://gitlab.gnome.org/GNOME/gnome-settings-daemon.git"
                 }
             ],
-            "modules": [
+            "modules" : [
                 {
-                    "name": "libcanberra",
-                    "sources": [
+                    "name" : "libcanberra",
+                    "sources" : [
                         {
-                            "type": "archive",
-                            "url": "http://0pointer.de/lennart/projects/libcanberra/libcanberra-0.30.tar.xz",
-                            "sha256": "c2b671e67e0c288a69fc33dc1b6f1b534d07882c2aceed37004bf48c601afa72"
+                            "type" : "archive",
+                            "url" : "http://0pointer.de/lennart/projects/libcanberra/libcanberra-0.30.tar.xz",
+                            "sha256" : "c2b671e67e0c288a69fc33dc1b6f1b534d07882c2aceed37004bf48c601afa72"
                         }
                     ],
-                    "config-opts": [
+                    "config-opts" : [
                         "--disable-alsa",
                         "--disable-null",
                         "--disable-oss"
@@ -566,51 +569,51 @@
             ]
         },
         {
-            "name": "cogl",
-            "config-opts": [
+            "name" : "cogl",
+            "config-opts" : [
                 "--disable-cogl-gst",
                 "--enable-xlib-egl-platform",
                 "--enable-wayland-egl-platform"
             ],
-            "sources": [
+            "sources" : [
                 {
-                    "type": "git",
-                    "url": "https://gitlab.gnome.org/GNOME/cogl.git",
-                    "branch": "cogl-1.22"
+                    "type" : "git",
+                    "url" : "https://gitlab.gnome.org/GNOME/cogl.git",
+                    "branch" : "cogl-1.22"
                 }
             ]
         },
         {
-            "name": "clutter",
-            "config-opts": [
+            "name" : "clutter",
+            "config-opts" : [
                 "--enable-egl-backend",
                 "--enable-wayland-backend"
             ],
-            "sources": [
+            "sources" : [
                 {
-                    "type": "archive",
-                    "url": "https://download.gnome.org/sources/clutter/1.26/clutter-1.26.4.tar.xz",
-                    "sha256": "8b48fac159843f556d0a6be3dbfc6b083fc6d9c58a20a49a6b4919ab4263c4e6"
+                    "type" : "archive",
+                    "url" : "https://download.gnome.org/sources/clutter/1.26/clutter-1.26.4.tar.xz",
+                    "sha256" : "8b48fac159843f556d0a6be3dbfc6b083fc6d9c58a20a49a6b4919ab4263c4e6"
                 }
             ]
         },
         {
-            "name": "clutter-gtk",
-            "sources": [
+            "name" : "clutter-gtk",
+            "sources" : [
                 {
-                    "type": "archive",
-                    "url": "https://download.gnome.org/sources/clutter-gtk/1.8/clutter-gtk-1.8.4.tar.xz",
-                    "sha256": "521493ec038973c77edcb8bc5eac23eed41645117894aaee7300b2487cb42b06"
+                    "type" : "archive",
+                    "url" : "https://download.gnome.org/sources/clutter-gtk/1.8/clutter-gtk-1.8.4.tar.xz",
+                    "sha256" : "521493ec038973c77edcb8bc5eac23eed41645117894aaee7300b2487cb42b06"
                 }
             ]
         },
         {
-            "name": "clutter-gst",
-            "sources": [
+            "name" : "clutter-gst",
+            "sources" : [
                 {
-                    "type": "git",
-                    "url": "https://gitlab.gnome.org/GNOME/clutter-gst.git",
-                    "branch": "clutter-gst-3.0"
+                    "type" : "git",
+                    "url" : "https://gitlab.gnome.org/GNOME/clutter-gst.git",
+                    "branch" : "clutter-gst-3.0"
                 }
             ]
         },
@@ -643,11 +646,11 @@
             "name" : "libkmod",
             "buildsystem" : "autotools",
             "sources" : [
-            	{
+                {
                     "type" : "archive",
                     "url" : "https://mirrors.edge.kernel.org/pub/linux/utils/kernel/kmod/kmod-25.tar.xz",
                     "sha256" : "7165e6496656159dcb909a91ed708a0fe273a4b128b4b1dc997ccb5189eef1cd"
-            	}
+                }
             ]
         },
         {

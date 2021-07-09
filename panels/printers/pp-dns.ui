@@ -23,43 +23,29 @@
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <child>
-                  <object class="GtkButton" id="dw_left_show_btn">
-                    <property name="label" translatable="yes">Show list</property>
-                    <property name="width-request">103</property>
-                    <property name="height-request">30</property>
-                    <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <property name="receives-default">True</property>
-                  </object>
-                  <packing>
-                    <property name="x">30</property>
-                    <property name="y">61</property>
-                  </packing>
-                </child>
-                <child>
                   <object class="GtkButton" id="dw_left_add_btn">
                     <property name="label" translatable="yes">Add to list</property>
-                    <property name="width-request">99</property>
+                    <property name="width-request">66</property>
                     <property name="height-request">32</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                     <property name="receives-default">True</property>
                   </object>
                   <packing>
-                    <property name="x">28</property>
-                    <property name="y">239</property>
+                    <property name="x">9</property>
+                    <property name="y">39</property>
                   </packing>
                 </child>
                 <child>
                   <object class="GtkEntry" id="dw_left_enter_text">
-                    <property name="width-request">168</property>
-                    <property name="height-request">80</property>
+                    <property name="width-request">154</property>
+                    <property name="height-request">28</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
                   </object>
                   <packing>
-                    <property name="x">28</property>
-                    <property name="y">152</property>
+                    <property name="x">9</property>
+                    <property name="y">5</property>
                   </packing>
                 </child>
               </object>
@@ -73,9 +59,6 @@
               <object class="GtkListBox" id="dw_right_list">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <child>
-                  <placeholder/>
-                </child>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -91,35 +74,6 @@
           </packing>
         </child>
       </object>
-    </child>
-  </object>
-  <object class="GtkBox" id="list_entry">
-    <property name="visible">True</property>
-    <property name="can-focus">False</property>
-    <property name="homogeneous">True</property>
-    <child>
-      <object class="GtkImage">
-        <property name="visible">True</property>
-        <property name="can-focus">False</property>
-        <property name="stock">gtk-print</property>
-      </object>
-      <packing>
-        <property name="expand">False</property>
-        <property name="fill">True</property>
-        <property name="position">0</property>
-      </packing>
-    </child>
-    <child>
-      <object class="GtkLabel" id="list_entry_label">
-        <property name="visible">True</property>
-        <property name="can-focus">False</property>
-        <property name="label" translatable="yes">label</property>
-      </object>
-      <packing>
-        <property name="expand">False</property>
-        <property name="fill">True</property>
-        <property name="position">1</property>
-      </packing>
     </child>
   </object>
 </interface>
