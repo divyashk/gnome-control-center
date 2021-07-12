@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.cpp": "cpp",
+        "typeinfo": "c",
+        "system_error": "c",
+        "pp-job-row.h": "c"
+    }
+}

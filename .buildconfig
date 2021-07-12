@@ -1,0 +1,13 @@
+[default]
+name=Default
+runtime=host
+toolchain=default
+config-opts=
+run-opts=
+prefix=/home/divyash/.var/app/org.gnome.Builder/cache/gnome-builder/install/gnome-control-center/host
+app-id=
+postbuild=
+prebuild=
+
+[default.environment]
+GTK_THEME=Adwaita:dark

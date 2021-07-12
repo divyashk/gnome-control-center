@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.cpp": "cpp",
+        "gi18n-lib.h": "c",
+        "cups.h": "c"
+    }
+}
