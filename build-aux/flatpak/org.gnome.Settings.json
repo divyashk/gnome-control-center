@@ -27,8 +27,8 @@
         "cflags" : "-O2 -g",
         "cxxflags" : "-O2 -g",
         "env" : {
-            "V" : "1",
-            "GTK_THEME" : "Adwaita"
+            "GTK_THEME" : "Adwaita:dark",
+            "V" : "1"
         }
     },
     "x-run-args" : [

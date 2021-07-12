@@ -964,6 +964,12 @@ printer_add_cb (CcPrintersPanel *self)
                            G_CONNECT_SWAPPED);
 }
 
+// this function requires your machine to have atleast one cups destination.
+static cups_dest_t create_dummy_print_dest(CcPrintersPanel* self){
+  cups_dest_t dummy;
+  dummy = self->dests[0];
+  return dummy;
+}
 
 static void
 dw_left_add_btn_cb(CcPrintersPanel * self){
@@ -973,14 +979,17 @@ dw_left_add_btn_cb(CcPrintersPanel * self){
     // debug
     if ( self->list_serv == NULL) g_debug ("List not loaded into the builder");
 
-    GtkWidget* row_list = (GtkWidget*) pp_dns_row_new ((gchar*)gtk_entry_get_text(text_entry_to_add));
+    cups_dest_t temp_dest;
+    temp_dest = create_dummy_print_dest(self);
+    temp_dest.name = (char*)gtk_entry_get_text (text_entry_to_add);
 
+
+
+    GtkWidget* row_list = (GtkWidget*) pp_printer_dns_entry_new (temp_dest, self->is_authorized);
+    gtk_widget_show (row_list);
     gtk_entry_set_text(text_entry_to_add,"");
 
-
-
     gtk_list_box_insert (self->list_serv, row_list, -1);
-
 }
 
 static void
