@@ -5,7 +5,7 @@
   <object class="GtkPopover" id="printer-menu">
     <property name="can-focus">False</property>
     <child>
-      <!-- n-columns=3 n-rows=5 -->
+      <!-- n-columns=3 n-rows=4 -->
       <object class="GtkGrid">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
@@ -14,7 +14,8 @@
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="receives-default">False</property>
-            <property name="text" translatable="yes">Printing Options</property>
+            <property name="text" translatable="yes">Options</property>
+            <property name="centered">True</property>
             <signal name="clicked" handler="on_show_printer_options_dialog" swapped="no"/>
           </object>
           <packing>
@@ -27,7 +28,8 @@
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="receives-default">False</property>
-            <property name="text" translatable="yes">Printer Details</property>
+            <property name="text" translatable="yes">Details</property>
+            <property name="centered">True</property>
             <signal name="clicked" handler="on_show_printer_details_dialog" swapped="no"/>
           </object>
           <packing>
@@ -37,7 +39,7 @@
         </child>
         <child>
           <object class="GtkCheckButton" id="printer_default_checkbutton">
-            <property name="label" translatable="yes" comments="Set this printer as default">Use Printer by Default</property>
+            <property name="label" translatable="yes" comments="Set this printer as default">Use by default</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="receives-default">False</property>
@@ -52,35 +54,17 @@
           </packing>
         </child>
         <child>
-          <object class="GtkModelButton" id="clean_heads_menuitem">
+          <object class="GtkModelButton" id="remove_printer_menuitem">
+            <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="receives-default">False</property>
-            <property name="text" translatable="yes" comments="Translators: This button executes command which cleans print heads of the printer.">Clean Print Heads</property>
-            <signal name="clicked" handler="clean_heads" swapped="no"/>
+            <property name="text" translatable="yes">Remove</property>
+            <signal name="clicked" handler="remove_printer" object="PpPrinterDnsEntry" swapped="no"/>
           </object>
           <packing>
             <property name="left-attach">1</property>
             <property name="top-attach">3</property>
           </packing>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="remove_printer_menuitem">
-            <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="receives-default">False</property>
-            <property name="text" translatable="yes">Remove Printer</property>
-            <signal name="clicked" handler="remove_printer" object="PpPrinterDnsEntry" swapped="no"/>
-          </object>
-          <packing>
-            <property name="left-attach">1</property>
-            <property name="top-attach">4</property>
-          </packing>
-        </child>
-        <child>
-          <placeholder/>
-        </child>
-        <child>
-          <placeholder/>
         </child>
         <child>
           <placeholder/>
