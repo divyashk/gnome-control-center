@@ -41,6 +41,7 @@
 #include "pp-printer-entry.h"
 #include "pp-job.h"
 #include "pp-dns-row.h"
+#include "pp-dns-window.h"
 
 #include "cc-permission-infobar.h"
 #include "cc-util.h"
@@ -108,7 +109,6 @@ struct _CcPrintersPanel
 
   GtkSizeGroup *size_group;
 
-  GtkListBox* list_serv;
 };
 
 CC_PANEL_REGISTER (CcPrintersPanel, cc_printers_panel)
@@ -964,63 +964,12 @@ printer_add_cb (CcPrintersPanel *self)
                            G_CONNECT_SWAPPED);
 }
 
-// this function requires your machine to have atleast one cups destination.
-static cups_dest_t create_dummy_print_dest(CcPrintersPanel* self){
-  cups_dest_t dummy;
-  dummy = self->dests[0];
-  return dummy;
-}
-
-static void
-dw_left_add_btn_cb(CcPrintersPanel * self){
-
-    GtkEntry* text_entry_to_add = (GtkEntry*) gtk_builder_get_object (self->builder, "dw_left_enter_text");
-
-    // debug
-    if ( self->list_serv == NULL) g_debug ("List not loaded into the builder");
-
-    cups_dest_t temp_dest;
-    temp_dest = create_dummy_print_dest(self);
-    temp_dest.name = (char*)gtk_entry_get_text (text_entry_to_add);
-
-
-
-    GtkWidget* row_list = (GtkWidget*) pp_printer_dns_entry_new (temp_dest, self->is_authorized);
-    gtk_widget_show (row_list);
-    gtk_entry_set_text(text_entry_to_add,"");
-
-    gtk_list_box_insert (self->list_serv, row_list, -1);
-}
 
 static void
 dns_sd_button_cb(CcPrintersPanel *self){
-  g_autoptr(GError)       error = NULL;
-  guint                   builder_result;
-  gchar                  *dns_objects[] = {"dw_top_box","list_entry","list_entry_label", NULL};
-
-    // first had to create a new directive for pp-dns.ui in printers.gresource.xml so that the binary is created
-  builder_result = gtk_builder_add_objects_from_resource (self->builder,
-                                                          "/org/gnome/control-center/printers/pp-dns.ui" ,
-                                                          dns_objects, &error);
-
-  if (builder_result == 0)
-    {
-      /* Translators: The XML file containing user interface can not be loaded */
-      g_warning (_("Could not load ui: %s"), error->message);
-      return;
-    }
-
-  GtkWidget* widget = (GtkWidget*)
-    gtk_builder_get_object (self->builder, "dw_left_add_btn");
-  g_signal_connect_object (widget, "clicked", G_CALLBACK (dw_left_add_btn_cb), self, G_CONNECT_SWAPPED);
-
-  self->list_serv =  (GtkListBox*) gtk_builder_get_object(self->builder, "dw_right_list");
-
-
-  //TODO: need to consider more appropriate naming
-  GtkWidget* dns_window = (GtkWidget*) gtk_builder_get_object (self->builder, "dw_top_box");
+  // for the dummy printer details to be passed on we need atleast one destination to show up for now... will fix later.
+  GtkWidget* dns_window = (GtkWidget*) pp_dns_window_new(self->dests[0]);
   gtk_widget_show (GTK_WIDGET (dns_window));
-
 }
 
 
