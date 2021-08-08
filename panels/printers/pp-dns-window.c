@@ -174,9 +174,10 @@ static void browse_callback(
 
 void destroy(PpDnsWindow * self){
   /* Clean up */
-  g_main_loop_unref (self->loop);
+  //g_main_loop_unref (self->loop);
+  avahi_threaded_poll_stop(self->avahi_threaded_poll);
   avahi_client_free (self->client);
-  avahi_glib_poll_free (self->avahi_threaded_poll);
+  avahi_threaded_poll_free (self->avahi_threaded_poll);
 }
 
 static void
@@ -242,13 +243,13 @@ pp_dns_window_init(PpDnsWindow *self){
 
   /* Create the threaded poll Adaptor */
   self->avahi_threaded_poll = avahi_threaded_poll_new ();
-  self->poll_api = avahi_glib_poll_get (self->avahi_threaded_poll);
+  self->poll_api = avahi_threaded_poll_get (self->avahi_threaded_poll);
 
   /* Create a new AvahiClient instance */
   self->client = avahi_client_new (self->poll_api,  /* AvahiPoll object from above */
                                0,
             avahi_client_callback,                  /* Callback function for Client state changes */
-            self->loop,                             /* User data */
+            NULL,                                   /* User data */
             &error);                                /* Error return */
 
   /* Check the error return code */
@@ -277,9 +278,11 @@ pp_dns_window_init(PpDnsWindow *self){
   }
   g_message ("Avahi Server Version: %s", self->version);
 
-  /* Start the GLIB Main Loop */
-  g_main_loop_run (self->loop);
+//   /* Start the GLIB Main Loop */
+//   g_main_loop_run (self->loop);
 
+/* Finally, start the event loop thread */
+  avahi_threaded_poll_start(self->avahi_threaded_poll);
 
 }
 
