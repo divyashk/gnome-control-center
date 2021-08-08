@@ -27,7 +27,6 @@
 #include "pp-details-dialog.h"
 #include "pp-maintenance-command.h"
 #include "pp-options-dialog.h"
-#include "pp-jobs-dialog.h"
 #include "pp-printer.h"
 #include "pp-utils.h"
 
@@ -46,7 +45,6 @@ struct _PpPrinterDnsEntry
   GtkListBoxRow parent;
 
   gchar    *printer_name;
-  gboolean  is_accepting_jobs;
   gchar    *printer_make_and_model;
   gchar    *printer_location;
   gchar    *printer_hostname;
@@ -61,23 +59,17 @@ struct _PpPrinterDnsEntry
   GtkImage       *printer_icon;
   GtkLabel       *printer_status;
   GtkLabel       *printer_name_label;
-  GtkLabel       *printer_model_label;
   GtkLabel       *printer_model;
   GtkLabel       *printer_location_label;
   GtkLabel       *printer_location_address_label;
-  GtkLabel       *printer_inklevel_label;
   GtkFrame       *supply_frame;
   GtkDrawingArea *supply_drawing_area;
-  GtkWidget      *show_jobs_dialog_button;
-  GtkCheckButton *printer_default_checkbutton;
   GtkModelButton *remove_printer_menuitem;
   GtkBox         *printer_error;
   GtkLabel       *error_status;
 
-  /* Dialogs */
-  PpJobsDialog    *pp_jobs_dialog;
 
-  GCancellable *get_jobs_cancellable;
+
 };
 
 struct _PpPrinterDnsEntryClass
@@ -340,7 +332,6 @@ supply_levels_draw_cb (PpPrinterDnsEntry *self,
       }
     }
 
-  gtk_widget_set_visible (GTK_WIDGET (self->printer_inklevel_label), !is_empty);
   gtk_widget_set_visible (GTK_WIDGET (self->supply_frame), !is_empty);
 
   return TRUE;
@@ -414,14 +405,6 @@ on_show_printer_options_dialog (GtkButton      *button,
   gtk_widget_destroy (GTK_WIDGET (dialog));
 }
 
-static void
-set_as_default_printer (GtkToggleButton *button,
-                        PpPrinterDnsEntry  *self)
-{
-  printer_set_default (self->printer_name);
-
-  g_signal_emit_by_name (self, "printer-changed");
-}
 
 static void
 remove_printer (GtkButton      *button,
@@ -431,108 +414,6 @@ remove_printer (GtkButton      *button,
   gtk_widget_destroy (self);
 }
 
-static void
-get_jobs_cb (GObject      *source_object,
-             GAsyncResult *result,
-             gpointer      user_data)
-{
-  PpPrinterDnsEntry      *self = user_data;
-  g_autoptr(GError)    error = NULL;
-  g_autoptr(GPtrArray) jobs = NULL;
-  g_autofree gchar    *button_label = NULL;
-
-  jobs = pp_printer_get_jobs_finish (PP_PRINTER (source_object), result, &error);
-
-  if (error != NULL)
-    {
-      if (!g_error_matches (error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
-        {
-          g_warning ("Could not get jobs: %s", error->message);
-        }
-
-      return;
-    }
-
-  if (jobs->len == 0)
-    {
-      /* Translators: This is the label of the button that opens the Jobs Dialog. */
-      button_label = g_strdup (_("No Active Jobs"));
-    }
-  else
-    {
-      /* Translators: This is the label of the button that opens the Jobs Dialog. */
-      button_label = g_strdup_printf (ngettext ("%u Job", "%u Jobs", jobs->len), jobs->len);
-    }
-
-  gtk_button_set_label (GTK_BUTTON (self->show_jobs_dialog_button), button_label);
-  gtk_widget_set_sensitive (self->show_jobs_dialog_button, jobs->len > 0);
-
-  if (self->pp_jobs_dialog != NULL)
-    {
-      pp_jobs_dialog_update (self->pp_jobs_dialog);
-    }
-
-  g_clear_object (&self->get_jobs_cancellable);
-}
-
-void
-pp_printer_dns_entry_update_jobs_count (PpPrinterDnsEntry *self)
-{
-  g_autoptr(PpPrinter) printer = NULL;
-
-  g_cancellable_cancel (self->get_jobs_cancellable);
-  g_clear_object (&self->get_jobs_cancellable);
-
-  self->get_jobs_cancellable = g_cancellable_new ();
-
-  printer = pp_printer_new (self->printer_name);
-  pp_printer_get_jobs_async (printer,
-                             TRUE,
-                             CUPS_WHICHJOBS_ACTIVE,
-                             self->get_jobs_cancellable,
-                             get_jobs_cb,
-                             self);
-}
-
-static void
-jobs_dialog_response_cb (GtkDialog  *dialog,
-                         gint        response_id,
-                         gpointer    user_data)
-{
-  PpPrinterDnsEntry *self = (PpPrinterDnsEntry*) user_data;
-
-  if (self->pp_jobs_dialog != NULL)
-    {
-      gtk_widget_destroy (GTK_WIDGET (self->pp_jobs_dialog));
-      self->pp_jobs_dialog = NULL;
-    }
-}
-
-void
-pp_printer_dns_entry_show_jobs_dialog (PpPrinterDnsEntry *self)
-{
-  if (self->pp_jobs_dialog == NULL)
-    {
-      self->pp_jobs_dialog = pp_jobs_dialog_new (self->printer_name);
-      g_signal_connect_object (self->pp_jobs_dialog, "response", G_CALLBACK (jobs_dialog_response_cb), self, 0);
-      gtk_window_set_transient_for (GTK_WINDOW (self->pp_jobs_dialog), GTK_WINDOW (gtk_widget_get_toplevel (GTK_WIDGET (self))));
-      gtk_window_present (GTK_WINDOW (self->pp_jobs_dialog));
-    }
-}
-
-void
-pp_printer_dns_entry_authenticate_jobs (PpPrinterDnsEntry *self)
-{
-  pp_printer_dns_entry_show_jobs_dialog (self);
-  pp_jobs_dialog_authenticate_jobs (self->pp_jobs_dialog);
-}
-
-static void
-show_jobs_dialog (GtkButton *button,
-                  gpointer   user_data)
-{
-  pp_printer_dns_entry_show_jobs_dialog (PP_PRINTER_DNS_ENTRY (user_data));
-}
 
 enum
 {
@@ -541,19 +422,6 @@ enum
   PRINTER_STOPPED
 };
 
-static void
-restart_printer (GtkButton      *button,
-                 PpPrinterDnsEntry *self)
-{
-  if (self->printer_state == PRINTER_STOPPED)
-    printer_set_enabled (self->printer_name, TRUE);
-
-  if (!self->is_accepting_jobs)
-    printer_set_accepting_jobs (self->printer_name, TRUE, NULL);
-
-  g_signal_emit_by_name (self, "printer-changed");
-}
-
 GSList *
 pp_printer_dns_entry_get_size_group_widgets (PpPrinterDnsEntry *self)
 {
@@ -561,8 +429,8 @@ pp_printer_dns_entry_get_size_group_widgets (PpPrinterDnsEntry *self)
 
   widgets = g_slist_prepend (widgets, self->printer_icon);
   widgets = g_slist_prepend (widgets, self->printer_location_label);
-  widgets = g_slist_prepend (widgets, self->printer_model_label);
-  widgets = g_slist_prepend (widgets, self->printer_inklevel_label);
+
+
 
   return widgets;
 }
@@ -610,8 +478,6 @@ pp_printer_dns_entry_update (PpPrinterDnsEntry *self,
                          gboolean        is_authorized)
 {
   cups_ptype_t      printer_type = 0;
-  gboolean          is_accepting_jobs = TRUE;
-  gboolean          ink_supply_is_empty;
   g_autofree gchar *instance = NULL;
   const gchar      *printer_uri = NULL;
   const gchar      *device_uri = NULL;
@@ -727,13 +593,7 @@ pp_printer_dns_entry_update (PpPrinterDnsEntry *self,
         printer_make_and_model = printer.options[i].value;
       else if (g_strcmp0 (printer.options[i].name, "printer-state") == 0)
         self->printer_state = atoi (printer.options[i].value);
-      else if (g_strcmp0 (printer.options[i].name, "printer-is-accepting-jobs") == 0)
-        {
-          if (g_strcmp0 (printer.options[i].value, "true") == 0)
-            is_accepting_jobs = TRUE;
-          else
-            is_accepting_jobs = FALSE;
-        }
+
     }
 
   /* Find the first of the most severe reasons
@@ -780,7 +640,7 @@ pp_printer_dns_entry_update (PpPrinterDnsEntry *self,
         status = g_strdup (_(statuses[report_index]));
     }
 
-  if ((self->printer_state == PRINTER_STOPPED || !is_accepting_jobs) &&
+  if ((self->printer_state == PRINTER_STOPPED) &&
       status != NULL && status[0] != '\0')
     {
       gtk_label_set_label (self->error_status, status);
@@ -795,16 +655,9 @@ pp_printer_dns_entry_update (PpPrinterDnsEntry *self,
   switch (self->printer_state)
     {
       case PRINTER_READY:
-        if (is_accepting_jobs)
-          {
-            /* Translators: Printer's state (can start new job without waiting) */
-            printer_status = g_strdup ( C_("printer state", "Ready"));
-          }
-        else
-          {
-            /* Translators: Printer's state (printer is ready but doesn't accept new jobs) */
-            printer_status = g_strdup ( C_("printer state", "Does not accept jobs"));
-          }
+
+          /* Translators: Printer's state (printer is ready but doesn't accept new jobs) */
+          printer_status = g_strdup ( C_("printer state", "Does not accept jobs"));
         break;
       case PRINTER_PROCESSING:
         /* Translators: Printer's state (jobs are processing) */
@@ -824,7 +677,7 @@ pp_printer_dns_entry_update (PpPrinterDnsEntry *self,
   g_free (self->printer_location);
   self->printer_location = g_strdup (location);
 
-  self->is_accepting_jobs = is_accepting_jobs;
+
   self->is_authorized = is_authorized;
 
   g_free (self->printer_hostname);
@@ -833,15 +686,15 @@ pp_printer_dns_entry_update (PpPrinterDnsEntry *self,
   gtk_image_set_from_icon_name (self->printer_icon, printer_icon_name, GTK_ICON_SIZE_DIALOG);
   gtk_label_set_text (self->printer_status, printer_status);
   gtk_label_set_text (self->printer_name_label, instance);
-  g_signal_handlers_block_by_func (self->printer_default_checkbutton, set_as_default_printer, self);
-  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (self->printer_default_checkbutton), printer.is_default);
-  g_signal_handlers_unblock_by_func (self->printer_default_checkbutton, set_as_default_printer, self);
+
+
+
 
   self->printer_make_and_model = sanitize_printer_model (printer_make_and_model);
 
   if (self->printer_make_and_model == NULL || self->printer_make_and_model[0] == '\0')
     {
-      gtk_widget_hide (GTK_WIDGET (self->printer_model_label));
+
       gtk_widget_hide (GTK_WIDGET (self->printer_model));
     }
   else
@@ -859,13 +712,6 @@ pp_printer_dns_entry_update (PpPrinterDnsEntry *self,
       gtk_label_set_text (self->printer_location_address_label, location);
     }
 
-  ink_supply_is_empty = supply_level_is_empty (self);
-  gtk_widget_set_visible (GTK_WIDGET (self->printer_inklevel_label), !ink_supply_is_empty);
-  gtk_widget_set_visible (GTK_WIDGET (self->supply_frame), !ink_supply_is_empty);
-
-  pp_printer_dns_entry_update_jobs_count (self);
-
-  gtk_widget_set_sensitive (GTK_WIDGET (self->printer_default_checkbutton), self->is_authorized);
   gtk_widget_set_sensitive (GTK_WIDGET (self->remove_printer_menuitem), self->is_authorized);
 }
 
@@ -874,7 +720,7 @@ pp_printer_dns_entry_dispose (GObject *object)
 {
   PpPrinterDnsEntry *self = PP_PRINTER_DNS_ENTRY (object);
 
-  g_cancellable_cancel (self->get_jobs_cancellable);
+
 
 
   g_clear_pointer (&self->printer_name, g_free);
@@ -882,7 +728,6 @@ pp_printer_dns_entry_dispose (GObject *object)
   g_clear_pointer (&self->printer_make_and_model, g_free);
   g_clear_pointer (&self->printer_hostname, g_free);
   g_clear_pointer (&self->inklevel, ink_level_data_free);
-  g_clear_object (&self->get_jobs_cancellable);
   g_clear_object (&self->clean_command);
 
   G_OBJECT_CLASS (pp_printer_dns_entry_parent_class)->dispose (object);
@@ -899,25 +744,19 @@ pp_printer_dns_entry_class_init (PpPrinterDnsEntryClass *klass)
   gtk_widget_class_bind_template_child (widget_class, PpPrinterDnsEntry, printer_icon);
   gtk_widget_class_bind_template_child (widget_class, PpPrinterDnsEntry, printer_name_label);
   gtk_widget_class_bind_template_child (widget_class, PpPrinterDnsEntry, printer_status);
-  gtk_widget_class_bind_template_child (widget_class, PpPrinterDnsEntry, printer_model_label);
   gtk_widget_class_bind_template_child (widget_class, PpPrinterDnsEntry, printer_model);
   gtk_widget_class_bind_template_child (widget_class, PpPrinterDnsEntry, printer_location_label);
   gtk_widget_class_bind_template_child (widget_class, PpPrinterDnsEntry, printer_location_address_label);
-  gtk_widget_class_bind_template_child (widget_class, PpPrinterDnsEntry, printer_inklevel_label);
   gtk_widget_class_bind_template_child (widget_class, PpPrinterDnsEntry, supply_frame);
   gtk_widget_class_bind_template_child (widget_class, PpPrinterDnsEntry, supply_drawing_area);
-  gtk_widget_class_bind_template_child (widget_class, PpPrinterDnsEntry, printer_default_checkbutton);
-  gtk_widget_class_bind_template_child (widget_class, PpPrinterDnsEntry, show_jobs_dialog_button);
   gtk_widget_class_bind_template_child (widget_class, PpPrinterDnsEntry, remove_printer_menuitem);
   gtk_widget_class_bind_template_child (widget_class, PpPrinterDnsEntry, error_status);
   gtk_widget_class_bind_template_child (widget_class, PpPrinterDnsEntry, printer_error);
 
   gtk_widget_class_bind_template_callback (widget_class, on_show_printer_details_dialog);
   gtk_widget_class_bind_template_callback (widget_class, on_show_printer_options_dialog);
-  gtk_widget_class_bind_template_callback (widget_class, set_as_default_printer);
   gtk_widget_class_bind_template_callback (widget_class, remove_printer);
-  gtk_widget_class_bind_template_callback (widget_class, show_jobs_dialog);
-  gtk_widget_class_bind_template_callback (widget_class, restart_printer);
+
 
   object_class->dispose = pp_printer_dns_entry_dispose;
 
