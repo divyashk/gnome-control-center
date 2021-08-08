@@ -16,6 +16,7 @@
         "--own-name=org.gnome.ControlCenter",
         "--own-name=org.gnome.SessionManager",
         "--share=ipc",
+        "--system-talk-name=org.freedesktop.Avahi",
         "--share=network",
         "--socket=x11",
         "--socket=pulseaudio",
@@ -45,6 +46,67 @@
         "*.a"
     ],
     "modules" : [
+    	{
+            "name": "avahi",
+            "cleanup": [
+                "/bin",
+                "/lib/avahi",
+                "/share/applications/*.desktop",
+                "/share/avahi"
+            ],
+            "config-opts": [
+                "--with-distro=none",
+                "--disable-gobject",
+                "--disable-introspection",
+                "--disable-qt3",
+                "--disable-qt4",
+                "--disable-qt5",
+                "--disable-gtk",
+                "--disable-core-docs",
+                "--disable-manpages",
+                "--disable-libdaemon",
+                "--disable-python",
+                "--disable-pygobject",
+                "--disable-mono",
+                "--disable-monodoc",
+                "--disable-autoipd",
+                "--disable-doxygen-doc",
+                "--disable-doxygen-dot",
+                "--disable-doxygen-xml",
+                "--disable-doxygen-html",
+                "--disable-manpages",
+                "--disable-xmltoman"
+            ],
+            "sources": [
+                {
+                    "type": "archive",
+                    "url": "https://www.avahi.org/download/avahi-0.8.tar.gz",
+                    "sha256": "060309d7a333d38d951bc27598c677af1796934dbd98e1024e7ad8de798fedda",
+                    "x-checker-data": {
+                        "type": "anitya",
+                        "project-id": 147,
+                        "url-template": "https://www.avahi.org/download/avahi-$version.tar.gz"
+                    }
+                }
+            ],
+            "modules": [
+                {
+                    "name": "libevent",
+                    "sources": [
+                        {
+                            "type": "archive",
+                            "url": "https://github.com/libevent/libevent/releases/download/release-2.1.12-stable//libevent-2.1.12-stable.tar.gz",
+                            "sha256": "92e6de1be9ec176428fd2367677e61ceffc2ee1cb119035037a27d346b0403bb",
+                            "x-checker-data": {
+                                "type": "anitya",
+                                "project-id": 1606,
+                                "url-template": "https://github.com/libevent/libevent/releases/download/release-$version-stable//libevent-$version-stable.tar.gz"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
         {
             "name" : "pwquality",
             "buildsystem" : "autotools",

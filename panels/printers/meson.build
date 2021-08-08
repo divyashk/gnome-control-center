@@ -67,7 +67,9 @@ deps = common_deps + [
   cups_dep,
   m_dep,
   polkit_gobject_dep,
-  dependency('smbclient')
+  dependency('smbclient'),
+  avahi_glib_dep,
+  avahi_client_dep
 ]
 
 printers_panel_lib = static_library(
