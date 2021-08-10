@@ -968,7 +968,7 @@ printer_add_cb (CcPrintersPanel *self)
 static void
 dns_sd_button_cb(CcPrintersPanel *self){
   // for the dummy printer details to be passed on we need atleast one destination to show up for now... will fix later.
-  GtkWidget* dns_window = (GtkWidget*) pp_dns_window_new(self->dests[0]);
+  GtkWidget* dns_window = (GtkWidget*) pp_dns_window_new();
   gtk_widget_show (GTK_WIDGET (dns_window));
 }
 

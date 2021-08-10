@@ -25,7 +25,9 @@
 #define PP_PRINTER_DNS_ENTRY_TYPE (pp_printer_dns_entry_get_type ())
 G_DECLARE_FINAL_TYPE (PpPrinterDnsEntry, pp_printer_dns_entry, PP, PRINTER_DNS_ENTRY, GtkListBoxRow)
 
-PpPrinterDnsEntry *pp_printer_dns_entry_new  (cups_dest_t printer,
+
+
+PpPrinterDnsEntry *pp_printer_dns_entry_new  (char* name, char* type, char* domain, char* hostname, uint16_t port,
                                        gboolean    is_authorized);
 
 const gchar    *pp_printer_dns_entry_get_name (PpPrinterDnsEntry *self);
@@ -41,5 +43,5 @@ void            pp_printer_dns_entry_show_jobs_dialog (PpPrinterDnsEntry *self);
 void            pp_printer_dns_entry_authenticate_jobs (PpPrinterDnsEntry *self);
 
 void            pp_printer_dns_entry_update (PpPrinterDnsEntry *self,
-                                         cups_dest_t     printer,
+                                         char* name, char* type, char* domain, char* hostname, uint16_t port,
                                          gboolean        is_authorized);

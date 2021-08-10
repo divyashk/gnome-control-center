@@ -18,7 +18,6 @@
 #include "pp-dns-window.h"
 #include "pp-dns-row.h"
 
-
 struct _PpDnsWindow
 {
     GtkWindow  parent;
@@ -27,9 +26,7 @@ struct _PpDnsWindow
 
     GtkButton   *dw_top_box_in;
     GtkLabel    *dw_main;
-    GtkFixed    *dw_left;
-    GtkButton   *dw_left_add_btn;
-    GtkEntry    *dw_left_enter_text;
+
     GtkListBox  *dw_right_list;
 
 
@@ -46,9 +43,6 @@ struct _PpDnsWindow
 
 
 G_DEFINE_TYPE(PpDnsWindow, pp_dns_window, GTK_TYPE_WINDOW);
-
-
-
 
 /* Callback for Avahi API Timeout Event */
 static void
@@ -96,29 +90,37 @@ static void resolve_callback(
     uint16_t port,
     AvahiStringList *txt,
     AvahiLookupResultFlags flags,
-    AVAHI_GCC_UNUSED void *userdata)
+    AVAHI_GCC_UNUSED PpDnsWindow *self)
 {
+
     assert(r);
-    /* Called whenever a service has been resolved successfully or timed out */
+
+
     switch (event)
     {
     case AVAHI_RESOLVER_FAILURE:
-        fprintf(stderr, "(Resolver) Failed to resolve service '%s' of type '%s' in domain '%s': %s\n", name, type, domain, avahi_strerror(avahi_client_errno(avahi_service_resolver_get_client(r))));
-        break;
+         g_fprintf(stderr, "(Resolver) Failed to resolve service '%s' of type '%s' in domain '%s': %s\n", name, type, domain, avahi_strerror(avahi_client_errno(avahi_service_resolver_get_client(r))));
+         break;
     case AVAHI_RESOLVER_FOUND:
     {
+
+        PpPrinterDnsEntry* row_list = pp_printer_dns_entry_new ( name, type, domain, host_name, port , self->is_authorized);
+        gtk_widget_show ((GtkWidget*)row_list);
+
+        gtk_list_box_insert (self->dw_right_list, row_list, -1);
+
         char a[AVAHI_ADDRESS_STR_MAX], *t;
-        fprintf(stderr, "Service '%s' of type '%s' in domain '%s':\n", name, type, domain);
+        g_fprintf(stderr, "Service '%s' of type '%s' in domain '%s':\n", name, type, domain);
         avahi_address_snprint(a, sizeof(a), address);
         t = avahi_string_list_to_string(txt);
-        fprintf(stderr,
+        g_fprintf(stderr,
                 "\t%s:%u (%s)\n"
                 "\tTXT=%s\n"
                 "\tcookie is %u\n"
                 "\tis_local: %i\n"
                 "\tour_own: %i\n"
                 "\twide_area: %i\n"
-                "\tmulticast: %i\n"
+                "\64tmulticast: %i\n"
                 "\tcached: %i\n",
                 host_name, port, a,
                 t,
@@ -132,6 +134,10 @@ static void resolve_callback(
     }
     }
     avahi_service_resolver_free(r);
+
+
+
+
 }
 
 static void browse_callback(
@@ -143,38 +149,39 @@ static void browse_callback(
     const char *type,
     const char *domain,
     AVAHI_GCC_UNUSED AvahiLookupResultFlags flags,
-    void *userdata)
+    PpDnsWindow *self)
 {
-    AvahiClient *c = userdata;
+    AvahiClient *c = self->client;
     assert(b);
     /* Called whenever a new services becomes available on the LAN or is removed from the LAN */
     switch (event)
     {
     case AVAHI_BROWSER_FAILURE:
-        fprintf(stderr, "(Browser) %s\n", avahi_strerror(avahi_client_errno(avahi_service_browser_get_client(b))));
+        g_fprintf(stderr, "(Browser) %s\n", avahi_strerror(avahi_client_errno(avahi_service_browser_get_client(b))));
+
         return;
     case AVAHI_BROWSER_NEW:
-        fprintf(stderr, "(Browser) NEW: service '%s' of type '%s' in domain '%s'\n", name, type, domain);
+        g_fprintf(stderr, "(Browser) NEW: service '%s' of type '%s' in domain '%s'\n", name, type, domain);
         /* We ignore the returned resolver object. In the callback
                function we free it. If the server is terminated before
                the callback function is called the server will free
                the resolver for us. */
-        if (!(avahi_service_resolver_new(c, interface, protocol, name, type, domain, AVAHI_PROTO_UNSPEC, 0, resolve_callback, c)))
-            fprintf(stderr, "Failed to resolve service '%s': %s\n", name, avahi_strerror(avahi_client_errno(c)));
+        if (!(avahi_service_resolver_new(c, interface, protocol, name, type, domain, AVAHI_PROTO_UNSPEC, 0, resolve_callback, self)))
+            g_fprintf(stderr, "Failed to resolve service '%s': %s\n", name, avahi_strerror(avahi_client_errno(c)));
         break;
     case AVAHI_BROWSER_REMOVE:
-        fprintf(stderr, "(Browser) REMOVE: service '%s' of type '%s' in domain '%s'\n", name, type, domain);
+        g_fprintf(stderr, "(Browser) REMOVE: service '%s' of type '%s' in domain '%s'\n", name, type, domain);
         break;
     case AVAHI_BROWSER_ALL_FOR_NOW:
     case AVAHI_BROWSER_CACHE_EXHAUSTED:
-        fprintf(stderr, "(Browser) %s\n", event == AVAHI_BROWSER_CACHE_EXHAUSTED ? "CACHE_EXHAUSTED" : "ALL_FOR_NOW");
+        g_fprintf(stderr, "(Browser) %s\n", event == AVAHI_BROWSER_CACHE_EXHAUSTED ? "CACHE_EXHAUSTED" : "ALL_FOR_NOW");
         break;
     }
 }
 
 void destroy(PpDnsWindow * self){
   /* Clean up */
-  //g_main_loop_unref (self->loop);
+
   avahi_threaded_poll_stop(self->avahi_threaded_poll);
   avahi_client_free (self->client);
   avahi_threaded_poll_free (self->avahi_threaded_poll);
@@ -186,60 +193,25 @@ pp_dns_remove_row_cb(GtkWidget *widget, gpointer row){
 }
 
 static void
-dw_left_add_btn_cb(PpDnsWindow * self){
-
-    GtkEntry* text_entry_to_add = (GtkEntry*)self->dw_left_enter_text;
-
-    // debug
-    //if ( text_entry_to_add == NULL) g_debug ("found nULL!");
-
-    cups_dest_t temp_dest;
-    temp_dest = self->dummy_print_dest;
-    temp_dest.name = (char*)gtk_entry_get_text (text_entry_to_add);
-
-
-
-    GtkWidget* row_list = (GtkWidget*) pp_printer_dns_entry_new (temp_dest, self->is_authorized);
-    gtk_widget_show (row_list);
-    gtk_entry_set_text(text_entry_to_add,"");
-
-    gtk_list_box_insert (self->dw_right_list, row_list, -1);
-}
-
-static void
 pp_dns_window_class_init(PpDnsWindowClass *klass){
 
-  //GObjectClass *object_class = G_OBJECT_CLASS (klass);
+  GObjectClass *object_class = G_OBJECT_CLASS (klass);
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS(klass);
   gtk_widget_class_set_template_from_resource(widget_class, "/org/gnome/control-center/printers/pp-dns-window.ui");
 
   gtk_widget_class_bind_template_child (widget_class, PpDnsWindow, dw_top_box_in);
   gtk_widget_class_bind_template_child (widget_class, PpDnsWindow, dw_main);
-  gtk_widget_class_bind_template_child (widget_class, PpDnsWindow, dw_left);
-  gtk_widget_class_bind_template_child (widget_class, PpDnsWindow, dw_left_add_btn);
-  gtk_widget_class_bind_template_child (widget_class, PpDnsWindow, dw_left_enter_text);
+
   gtk_widget_class_bind_template_child (widget_class, PpDnsWindow, dw_right_list);
 
-  gtk_widget_class_bind_template_callback (widget_class, dw_left_add_btn_cb);
 }
 
-
-
-static void
-pp_dns_window_init(PpDnsWindow *self){
-
-  self->is_authorized = gtk_true();
-  gtk_widget_init_template(GTK_WIDGET (self));
-
+static void start_avahi_in_background(PpDnsWindow *self){
   int error;
-  AvahiServiceBrowser *sb = NULL;
+
 
   /* Optional: Tell avahi to use g_malloc and g_free */
   avahi_set_allocator (avahi_glib_allocator ());
-
-
-//   /* Create the GLIB main loop */
-//   self->loop = g_main_loop_new (NULL, FALSE);
 
   /* Create the threaded poll Adaptor */
   self->avahi_threaded_poll = avahi_threaded_poll_new ();
@@ -259,11 +231,18 @@ pp_dns_window_init(PpDnsWindow *self){
       g_warning ("Error initializing Avahi: %s", avahi_strerror (error));
       destroy(self);
   }
-
+  AvahiServiceBrowser *sb = NULL;
   /* Create the service browser */
-  if (!(sb = avahi_service_browser_new(self->client, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, "_ipp._tcp", NULL, 0, browse_callback, self->client)))
+  if (!(sb = avahi_service_browser_new(self->client, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, "_ipp._tcp", NULL, 0, browse_callback, self)))
   {
-      fprintf(stderr, "Failed to create service browser: %s\n", avahi_strerror(avahi_client_errno(self->client)));
+      g_fprintf(stderr, "Failed to create service browser: %s\n", avahi_strerror(avahi_client_errno(self->client)));
+      destroy(self);
+  }
+  AvahiServiceBrowser *sb2 = NULL;
+  /* Create the service browser */
+  if (!(sb2 = avahi_service_browser_new(self->client, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, "_ftp._tcp", NULL, 0, browse_callback, self)))
+  {
+      g_fprintf(stderr, "Failed to create service browser: %s\n", avahi_strerror(avahi_client_errno(self->client)));
       destroy(self);
   }
 
@@ -278,21 +257,28 @@ pp_dns_window_init(PpDnsWindow *self){
   }
   g_message ("Avahi Server Version: %s", self->version);
 
-//   /* Start the GLIB Main Loop */
-//   g_main_loop_run (self->loop);
-
-/* Finally, start the event loop thread */
+  /* Finally, start the event loop thread */
   avahi_threaded_poll_start(self->avahi_threaded_poll);
+}
 
+static void
+pp_dns_window_init(PpDnsWindow *self){
+
+  self->is_authorized = gtk_true();
+  gtk_widget_init_template(GTK_WIDGET (self));
+
+  GdkColor color;
+  gdk_color_parse("#f6f5f4", &color);
+  gtk_widget_modify_bg((GtkWidget*)(self->dw_right_list), GTK_STATE_NORMAL, &color);
+
+  start_avahi_in_background (self);
 }
 
 PpDnsWindow*
-pp_dns_window_new(cups_dest_t dest_dummy)
+pp_dns_window_new()
 {
   PpDnsWindow *self;
   self = g_object_new(PP_DNS_WINDOW_TYPE, NULL);
-  g_signal_connect_object (self->dw_left_add_btn, "clicked", G_CALLBACK (dw_left_add_btn_cb), self, G_CONNECT_SWAPPED);
-  self->dummy_print_dest = dest_dummy;
   return self;
 }
 
