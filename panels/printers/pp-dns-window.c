@@ -28,8 +28,7 @@ struct _PpDnsWindow
     GtkLabel    *dw_main;
 
     GtkListBox  *dw_right_list;
-
-
+    GHashTable  *service_hash_table;
     gboolean is_authorized;
 
     cups_dest_t dummy_print_dest;
@@ -103,11 +102,22 @@ static void resolve_callback(
          break;
     case AVAHI_RESOLVER_FOUND:
     {
+        gchar* port_str = g_strdup_printf("%i", port);
 
-        PpPrinterDnsEntry* row_list = pp_printer_dns_entry_new ( name, type, domain, host_name, port , self->is_authorized);
-        gtk_widget_show ((GtkWidget*)row_list);
 
-        gtk_list_box_insert (self->dw_right_list, row_list, -1);
+        gchar* service_name_unique = g_strjoin(":",name,type,domain,host_name,port_str, NULL);
+
+        if (  g_hash_table_lookup (self->service_hash_table, service_name_unique) == NULL){
+
+          PpPrinterDnsEntry* row_list = pp_printer_dns_entry_new ( name, type, domain, host_name, port_str , self->is_authorized);
+          g_debug("Entered 1 !");
+          gtk_widget_show ((GtkWidget*)row_list);
+          g_hash_table_add (self->service_hash_table, service_name_unique);
+          g_debug("Entered  2 !");
+          gtk_list_box_insert (self->dw_right_list, row_list, -1);
+        }
+        else
+          g_debug("Did not enter!");
 
         char a[AVAHI_ADDRESS_STR_MAX], *t;
         g_fprintf(stderr, "Service '%s' of type '%s' in domain '%s':\n", name, type, domain);
@@ -168,6 +178,7 @@ static void browse_callback(
                the resolver for us. */
         if (!(avahi_service_resolver_new(c, interface, protocol, name, type, domain, AVAHI_PROTO_UNSPEC, 0, resolve_callback, self)))
             g_fprintf(stderr, "Failed to resolve service '%s': %s\n", name, avahi_strerror(avahi_client_errno(c)));
+
         break;
     case AVAHI_BROWSER_REMOVE:
         g_fprintf(stderr, "(Browser) REMOVE: service '%s' of type '%s' in domain '%s'\n", name, type, domain);
@@ -231,21 +242,27 @@ static void start_avahi_in_background(PpDnsWindow *self){
       g_warning ("Error initializing Avahi: %s", avahi_strerror (error));
       destroy(self);
   }
-  AvahiServiceBrowser *sb = NULL;
+  AvahiServiceBrowser *sb_ipp = NULL;
   /* Create the service browser */
-  if (!(sb = avahi_service_browser_new(self->client, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, "_ipp._tcp", NULL, 0, browse_callback, self)))
+  if (!(sb_ipp = avahi_service_browser_new(self->client, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, "_ipp._tcp", NULL, 0, browse_callback, self)))
   {
       g_fprintf(stderr, "Failed to create service browser: %s\n", avahi_strerror(avahi_client_errno(self->client)));
       destroy(self);
   }
-  AvahiServiceBrowser *sb2 = NULL;
+  AvahiServiceBrowser *sb_ftp = NULL;
   /* Create the service browser */
-  if (!(sb2 = avahi_service_browser_new(self->client, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, "_ftp._tcp", NULL, 0, browse_callback, self)))
+  if (!(sb_ftp = avahi_service_browser_new(self->client, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, "_ftp._tcp", NULL, 0, browse_callback, self)))
   {
       g_fprintf(stderr, "Failed to create service browser: %s\n", avahi_strerror(avahi_client_errno(self->client)));
       destroy(self);
   }
-
+  AvahiServiceBrowser *sb_http = NULL;
+  /* Create the service browser */
+  if (!(sb_http = avahi_service_browser_new(self->client, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, "_http._tcp", NULL, 0, browse_callback, self)))
+  {
+      g_fprintf(stderr, "Failed to create service browser: %s\n", avahi_strerror(avahi_client_errno(self->client)));
+      destroy(self);
+  }
   /* Make a call to get the version string from the daemon */
   self->version = avahi_client_get_version_string (self->client);
 
@@ -265,6 +282,7 @@ static void
 pp_dns_window_init(PpDnsWindow *self){
 
   self->is_authorized = gtk_true();
+
   gtk_widget_init_template(GTK_WIDGET (self));
 
   GdkColor color;
@@ -272,6 +290,12 @@ pp_dns_window_init(PpDnsWindow *self){
   gtk_widget_modify_bg((GtkWidget*)(self->dw_right_list), GTK_STATE_NORMAL, &color);
 
   start_avahi_in_background (self);
+
+  self->service_hash_table = g_hash_table_new_full (g_str_hash,
+                                                 g_str_equal,
+                                                 g_free,
+                                                 NULL);
+
 }
 
 PpDnsWindow*
@@ -279,6 +303,7 @@ pp_dns_window_new()
 {
   PpDnsWindow *self;
   self = g_object_new(PP_DNS_WINDOW_TYPE, NULL);
+
   return self;
 }
 

@@ -43,6 +43,9 @@ struct _PpPrinterDnsEntry
   gchar    *printer_hostname;
   gboolean  is_authorized;
   gint      printer_state;
+  gchar *printer_type;
+  gchar *printer_domain;
+  gchar *printer_port;
 
   /* Widgets */
   GtkImage       *printer_icon;
@@ -56,6 +59,7 @@ struct _PpPrinterDnsEntry
   GtkModelButton *remove_printer_menuitem;
   GtkLabel       *printer_domain_value;
   GtkLabel       *printer_domain_label;
+  PpDnsWindow    *window_dns;
 };
 
 
@@ -151,9 +155,6 @@ sanitize_printer_model (const gchar *printer_make_and_model)
 }
 
 
-
-
-
 static void
 on_printer_rename_cb (GObject      *source_object,
                       GAsyncResult *result,
@@ -229,6 +230,8 @@ remove_printer (GtkButton      *button,
 {
   g_signal_emit_by_name (self, "printer-delete");
   gtk_widget_destroy (self);
+  g_hash_table_remove (self->window_dns->service_hash_table, gconstpointer key)
+
 }
 
 
@@ -252,32 +255,64 @@ pp_printer_dns_entry_get_size_group_widgets (PpPrinterDnsEntry *self)
 
 void
 pp_printer_dns_entry_update (PpPrinterDnsEntry *self,
-                         char* name, char* type, char* domain, char* hostname, uint16_t port,
+                         char* name, char* type, char* domain, char* hostname, char* port,
                          gboolean        is_authorized)
 {
-  gchar* port_str = g_strdup_printf("%i", port);
+
+  self->printer_name = name;
   gtk_label_set_text (self->printer_name_label,(gchar*) name);
 
+  self->printer_type = type;
   gtk_label_set_text (self->printer_model,(gchar*)  type);
+
+  self->printer_hostname = hostname;
   gtk_label_set_text (self->printer_location_address_label,(gchar*)  hostname);
+
+  self->printer_domain = domain;
   gtk_label_set_text (self->printer_domain_value,(gchar*)  domain);
-  gtk_label_set_text (self->printer_port_value,(gchar*) port_str);
+
+  self->printer_port = port;
+  gtk_label_set_text (self->printer_port_value,(gchar*) port);
 }
 
 
 
 const gchar *
-pp_printer_dns_entry_get_name (PpPrinterDnsEntry *self)
+pp_dns_printer_dns_entry_get_name (PpPrinterDnsEntry *self)
 {
   g_return_val_if_fail (PP_IS_PRINTER_DNS_ENTRY (self), NULL);
   return self->printer_name;
 }
 
 const gchar *
-pp_printer_dns_entry_get_location (PpPrinterDnsEntry *self)
+pp_dns_printer_dns_entry_get_port (PpPrinterDnsEntry *self)
 {
   g_return_val_if_fail (PP_IS_PRINTER_DNS_ENTRY (self), NULL);
-  return self->printer_location;
+  return self->printer_port;
+}
+
+
+const gchar *
+pp_dns_printer_dns_entry_get_hostname (PpPrinterDnsEntry *self)
+{
+  g_return_val_if_fail (PP_IS_PRINTER_DNS_ENTRY (self), NULL);
+  return self->printer_hostname;
+}
+
+
+const gchar *
+pp_dns_printer_dns_entry_get_type (PpPrinterDnsEntry *self)
+{
+  g_return_val_if_fail (PP_IS_PRINTER_DNS_ENTRY (self), NULL);
+  return self->printer_type;
+}
+
+
+const gchar *
+pp_dns_printer_dns_entry_get_domain (PpPrinterDnsEntry *self)
+{
+  g_return_val_if_fail (PP_IS_PRINTER_DNS_ENTRY (self), NULL);
+  return self->printer_domain;
 }
 
 
@@ -351,13 +386,13 @@ pp_printer_dns_entry_class_init (PpPrinterDnsEntryClass *klass)
 }
 
 PpPrinterDnsEntry *
-pp_printer_dns_entry_new (char* name, char* type, char* domain, char* hostname, uint16_t port,
-                      gboolean     is_authorized)
+pp_printer_dns_entry_new (char* name, char* type, char* domain, char* hostname, char* port,
+                      gboolean     is_authorized, PpDnsWindow* window)
 {
   PpPrinterDnsEntry *self;
 
   self = g_object_new (PP_PRINTER_DNS_ENTRY_TYPE, NULL);
-
+  self->window_dns = window;
 
 
   is_authorized = 1;

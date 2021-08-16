@@ -25,23 +25,28 @@
 #define PP_PRINTER_DNS_ENTRY_TYPE (pp_printer_dns_entry_get_type ())
 G_DECLARE_FINAL_TYPE (PpPrinterDnsEntry, pp_printer_dns_entry, PP, PRINTER_DNS_ENTRY, GtkListBoxRow)
 
+#include "pp-dns-window.h"
 
 
-PpPrinterDnsEntry *pp_printer_dns_entry_new  (char* name, char* type, char* domain, char* hostname, uint16_t port,
-                                       gboolean    is_authorized);
 
-const gchar    *pp_printer_dns_entry_get_name (PpPrinterDnsEntry *self);
+PpPrinterDnsEntry *pp_printer_dns_entry_new  (char* name, char* type, char* domain, char* hostname, char* port,
+                                       gboolean    is_authorized, PpDnsWindow* window_dns);
 
-const gchar    *pp_printer_dns_entry_get_location (PpPrinterDnsEntry *self);
 
-void            pp_printer_dns_entry_update_jobs_count (PpPrinterDnsEntry *self);
+const gchar* pp_dns_printer_entry_get_name(PpPrinterDnsEntry *self);
+
+const gchar* pp_dns_printer_entry_get_type(PpPrinterDnsEntry *self);
+
+const gchar* pp_dns_printer_entry_get_hostname(PpPrinterDnsEntry *self);
+
+const gchar* pp_dns_printer_entry_get_domain(PpPrinterDnsEntry *self);
+
+const gchar* pp_dns_printer_entry_get_port(PpPrinterDnsEntry *self);
+
 
 GSList         *pp_printer_dns_entry_get_size_group_widgets (PpPrinterDnsEntry *self);
 
-void            pp_printer_dns_entry_show_jobs_dialog (PpPrinterDnsEntry *self);
-
-void            pp_printer_dns_entry_authenticate_jobs (PpPrinterDnsEntry *self);
-
 void            pp_printer_dns_entry_update (PpPrinterDnsEntry *self,
-                                         char* name, char* type, char* domain, char* hostname, uint16_t port,
+                                         char* name, char* type, char* domain, char* hostname, char* port,
                                          gboolean        is_authorized);
+
