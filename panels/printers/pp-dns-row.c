@@ -59,7 +59,7 @@ struct _PpPrinterDnsEntry
   GtkModelButton *remove_printer_menuitem;
   GtkLabel       *printer_domain_value;
   GtkLabel       *printer_domain_label;
-  PpDnsWindow    *window_dns;
+
 };
 
 
@@ -223,17 +223,12 @@ on_show_printer_options_dialog (GtkButton      *button,
   gtk_widget_destroy (GTK_WIDGET (dialog));
 }
 
+void
+pp_dns_printer_entry_remove_service(PpPrinterDnsEntry *self ){
 
-static void
-remove_printer (GtkButton      *button,
-                PpPrinterDnsEntry *self)
-{
-  g_signal_emit_by_name (self, "printer-delete");
-  gtk_widget_destroy (self);
-  g_hash_table_remove (self->window_dns->service_hash_table, gconstpointer key)
+  gtk_widget_destroy (GTK_WIDGET (self));
 
 }
-
 
 enum
 {
@@ -316,21 +311,6 @@ pp_dns_printer_dns_entry_get_domain (PpPrinterDnsEntry *self)
 }
 
 
-static void
-pp_printer_dns_entry_dispose (GObject *object)
-{
-  PpPrinterDnsEntry *self = PP_PRINTER_DNS_ENTRY (object);
-
-
-
-
-  g_clear_pointer (&self->printer_name, g_free);
-  g_clear_pointer (&self->printer_location, g_free);
-  g_clear_pointer (&self->printer_make_and_model, g_free);
-  g_clear_pointer (&self->printer_hostname, g_free);
-
-  G_OBJECT_CLASS (pp_printer_dns_entry_parent_class)->dispose (object);
-}
 
 static void
 pp_printer_dns_entry_class_init (PpPrinterDnsEntryClass *klass)
@@ -354,10 +334,8 @@ pp_printer_dns_entry_class_init (PpPrinterDnsEntryClass *klass)
 
   gtk_widget_class_bind_template_callback (widget_class, on_show_printer_details_dialog);
   gtk_widget_class_bind_template_callback (widget_class, on_show_printer_options_dialog);
-  gtk_widget_class_bind_template_callback (widget_class, remove_printer);
+  gtk_widget_class_bind_template_callback (widget_class, pp_dns_printer_entry_remove_service);
 
-
-  object_class->dispose = pp_printer_dns_entry_dispose;
 
   signals[IS_DEFAULT_PRINTER] =
     g_signal_new ("printer-changed",
@@ -387,12 +365,11 @@ pp_printer_dns_entry_class_init (PpPrinterDnsEntryClass *klass)
 
 PpPrinterDnsEntry *
 pp_printer_dns_entry_new (char* name, char* type, char* domain, char* hostname, char* port,
-                      gboolean     is_authorized, PpDnsWindow* window)
+                      gboolean     is_authorized)
 {
   PpPrinterDnsEntry *self;
 
   self = g_object_new (PP_PRINTER_DNS_ENTRY_TYPE, NULL);
-  self->window_dns = window;
 
 
   is_authorized = 1;

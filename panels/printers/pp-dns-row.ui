@@ -42,8 +42,9 @@
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="receives-default">False</property>
-            <property name="text" translatable="yes">Remove</property>
-            <signal name="clicked" handler="remove_printer" object="PpPrinterDnsEntry" swapped="no"/>
+            <property name="text" translatable="yes">Hide</property>
+            <property name="centered">True</property>
+            <signal name="clicked" handler="pp_dns_printer_entry_remove_service" object="PpPrinterDnsEntry" swapped="yes"/>
           </object>
           <packing>
             <property name="left-attach">1</property>

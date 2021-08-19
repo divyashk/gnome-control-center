@@ -16,7 +16,7 @@
 
 
 #include "pp-dns-window.h"
-#include "pp-dns-row.h"
+
 
 struct _PpDnsWindow
 {
@@ -93,7 +93,7 @@ static void resolve_callback(
 {
 
     assert(r);
-
+    gchar* port_str = g_strdup_printf("%i", port);
 
     switch (event)
     {
@@ -102,22 +102,18 @@ static void resolve_callback(
          break;
     case AVAHI_RESOLVER_FOUND:
     {
-        gchar* port_str = g_strdup_printf("%i", port);
 
 
-        gchar* service_name_unique = g_strjoin(":",name,type,domain,host_name,port_str, NULL);
+        gchar* service_name_unique = g_strjoin(":",name,type,domain, NULL);
 
         if (  g_hash_table_lookup (self->service_hash_table, service_name_unique) == NULL){
 
           PpPrinterDnsEntry* row_list = pp_printer_dns_entry_new ( name, type, domain, host_name, port_str , self->is_authorized);
-          g_debug("Entered 1 !");
+
           gtk_widget_show ((GtkWidget*)row_list);
-          g_hash_table_add (self->service_hash_table, service_name_unique);
-          g_debug("Entered  2 !");
-          gtk_list_box_insert (self->dw_right_list, row_list, -1);
+          g_hash_table_insert (self->service_hash_table, service_name_unique, row_list);
+          gtk_list_box_insert (self->dw_right_list,GTK_WIDGET (row_list), -1);
         }
-        else
-          g_debug("Did not enter!");
 
         char a[AVAHI_ADDRESS_STR_MAX], *t;
         g_fprintf(stderr, "Service '%s' of type '%s' in domain '%s':\n", name, type, domain);
@@ -144,8 +140,6 @@ static void resolve_callback(
     }
     }
     avahi_service_resolver_free(r);
-
-
 
 
 }
@@ -181,8 +175,20 @@ static void browse_callback(
 
         break;
     case AVAHI_BROWSER_REMOVE:
-        g_fprintf(stderr, "(Browser) REMOVE: service '%s' of type '%s' in domain '%s'\n", name, type, domain);
-        break;
+        {
+           gchar* service_name_unique = g_strjoin(":",name,type,domain, NULL);
+
+           PpPrinterDnsEntry* row_to_be_deleted  = g_hash_table_lookup(self->service_hash_table,service_name_unique);
+
+            if (row_to_be_deleted != NULL){
+
+              gtk_widget_destroy(GTK_WIDGET (row_to_be_deleted));
+              g_hash_table_remove (self->service_hash_table, service_name_unique);
+
+            }
+          g_fprintf(stderr, "(Browser) REMOVE: service '%s' of type '%s' in domain '%s'\n", name, type, domain);
+          break;
+        }
     case AVAHI_BROWSER_ALL_FOR_NOW:
     case AVAHI_BROWSER_CACHE_EXHAUSTED:
         g_fprintf(stderr, "(Browser) %s\n", event == AVAHI_BROWSER_CACHE_EXHAUSTED ? "CACHE_EXHAUSTED" : "ALL_FOR_NOW");
@@ -196,11 +202,6 @@ void destroy(PpDnsWindow * self){
   avahi_threaded_poll_stop(self->avahi_threaded_poll);
   avahi_client_free (self->client);
   avahi_threaded_poll_free (self->avahi_threaded_poll);
-}
-
-static void
-pp_dns_remove_row_cb(GtkWidget *widget, gpointer row){
-  gtk_widget_destroy (row);
 }
 
 static void
@@ -242,6 +243,15 @@ static void start_avahi_in_background(PpDnsWindow *self){
       g_warning ("Error initializing Avahi: %s", avahi_strerror (error));
       destroy(self);
   }
+
+  AvahiServiceBrowser *sb_ipps = NULL;
+  /* Create the service browser */
+  if (!(sb_ipps = avahi_service_browser_new(self->client, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, "_ipps._tcp", NULL, 0, browse_callback, self)))
+  {
+      g_fprintf(stderr, "Failed to create service browser: %s\n", avahi_strerror(avahi_client_errno(self->client)));
+      destroy(self);
+  }
+
   AvahiServiceBrowser *sb_ipp = NULL;
   /* Create the service browser */
   if (!(sb_ipp = avahi_service_browser_new(self->client, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, "_ipp._tcp", NULL, 0, browse_callback, self)))

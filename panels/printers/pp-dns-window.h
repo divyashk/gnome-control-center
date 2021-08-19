@@ -2,6 +2,7 @@
 
 #include <gtk/gtk.h>
 #include <cups/cups.h>
+#include "pp-dns-row.h"
 G_BEGIN_DECLS
 
 #define PP_DNS_WINDOW_TYPE (pp_dns_window_get_type())
