@@ -102,13 +102,26 @@ static void resolve_callback(
          break;
     case AVAHI_RESOLVER_FOUND:
     {
+        char* admin_url = NULL;
 
+        AvahiStringList* list = avahi_string_list_find( txt, "adminurl" );
+
+      /* If the key adminurl is found in the TXT records */
+        if ( list != NULL){
+          char* key, * value;
+
+          avahi_string_list_get_pair( list, &key, &value, NULL );
+          admin_url = g_strdup( value );
+
+          avahi_free( key );
+          avahi_free( value );
+        }
 
         gchar* service_name_unique = g_strjoin(":",name,type,domain, NULL);
 
         if (  g_hash_table_lookup (self->service_hash_table, service_name_unique) == NULL){
 
-          PpPrinterDnsEntry* row_list = pp_printer_dns_entry_new ( name, type, domain, host_name, port_str , self->is_authorized);
+          PpPrinterDnsEntry* row_list = pp_printer_dns_entry_new ( name, type, domain, host_name, port_str, admin_url , self->is_authorized);
 
           gtk_widget_show ((GtkWidget*)row_list);
           g_hash_table_insert (self->service_hash_table, service_name_unique, row_list);
@@ -119,6 +132,8 @@ static void resolve_callback(
         g_fprintf(stderr, "Service '%s' of type '%s' in domain '%s':\n", name, type, domain);
         avahi_address_snprint(a, sizeof(a), address);
         t = avahi_string_list_to_string(txt);
+
+
         g_fprintf(stderr,
                 "\t%s:%u (%s)\n"
                 "\tTXT=%s\n"
@@ -259,6 +274,7 @@ static void start_avahi_in_background(PpDnsWindow *self){
       g_fprintf(stderr, "Failed to create service browser: %s\n", avahi_strerror(avahi_client_errno(self->client)));
       destroy(self);
   }
+
   AvahiServiceBrowser *sb_ftp = NULL;
   /* Create the service browser */
   if (!(sb_ftp = avahi_service_browser_new(self->client, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, "_ftp._tcp", NULL, 0, browse_callback, self)))
@@ -266,6 +282,7 @@ static void start_avahi_in_background(PpDnsWindow *self){
       g_fprintf(stderr, "Failed to create service browser: %s\n", avahi_strerror(avahi_client_errno(self->client)));
       destroy(self);
   }
+
   AvahiServiceBrowser *sb_http = NULL;
   /* Create the service browser */
   if (!(sb_http = avahi_service_browser_new(self->client, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, "_http._tcp", NULL, 0, browse_callback, self)))
@@ -273,6 +290,15 @@ static void start_avahi_in_background(PpDnsWindow *self){
       g_fprintf(stderr, "Failed to create service browser: %s\n", avahi_strerror(avahi_client_errno(self->client)));
       destroy(self);
   }
+
+  AvahiServiceBrowser *sb_https = NULL;
+  /* Create the service browser */
+  if (!(sb_http = avahi_service_browser_new(self->client, AVAHI_IF_UNSPEC, AVAHI_PROTO_UNSPEC, "_https._tcp", NULL, 0, browse_callback, self)))
+  {
+      g_fprintf(stderr, "Failed to create service browser: %s\n", avahi_strerror(avahi_client_errno(self->client)));
+      destroy(self);
+  }
+
   /* Make a call to get the version string from the daemon */
   self->version = avahi_client_get_version_string (self->client);
 

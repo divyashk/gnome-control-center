@@ -59,6 +59,8 @@ struct _PpPrinterDnsEntry
   GtkModelButton *remove_printer_menuitem;
   GtkLabel       *printer_domain_value;
   GtkLabel       *printer_domain_label;
+  GtkLinkButton  *web_link_btn;
+  GtkButton      *close_btn;
 
 };
 
@@ -250,9 +252,29 @@ pp_printer_dns_entry_get_size_group_widgets (PpPrinterDnsEntry *self)
 
 void
 pp_printer_dns_entry_update (PpPrinterDnsEntry *self,
-                         char* name, char* type, char* domain, char* hostname, char* port,
+                         char* name, char* type, char* domain, char* hostname, char* port, char* admin_url,
                          gboolean        is_authorized)
 {
+  const char* uri;
+
+  /* If the admin_url was passed on by the resolve callback then use this as a link for the button */
+  if ( admin_url != NULL ){
+      uri = admin_url;
+      gtk_link_button_set_uri (self->web_link_btn, uri);
+      gtk_widget_set_sensitive (GTK_WIDGET(self->web_link_btn), gtk_true ());
+  }
+  /* Else if the service is an http(s) type then the button can redirect to it's hostname */
+  else if ( !g_strcmp0 (type, "_https._tcp") || !g_strcmp0 (type, "_http._tcp") ){
+
+    if (  g_strcmp0 (type, "_https._tcp") ){
+      uri = g_strconcat ("https://",hostname,":",port, NULL);
+    }
+    else if ( g_strcmp0 (type, "_http._tcp") ){
+        uri = g_strconcat ("http://",hostname,":",port, NULL);
+    }
+    gtk_link_button_set_uri (self->web_link_btn, uri);
+    gtk_widget_set_sensitive (GTK_WIDGET(self->web_link_btn), gtk_true ());
+  }
 
   self->printer_name = name;
   gtk_label_set_text (self->printer_name_label,(gchar*) name);
@@ -330,6 +352,8 @@ pp_printer_dns_entry_class_init (PpPrinterDnsEntryClass *klass)
   gtk_widget_class_bind_template_child (widget_class, PpPrinterDnsEntry, printer_domain_label);
   gtk_widget_class_bind_template_child (widget_class, PpPrinterDnsEntry, printer_port_value);
   gtk_widget_class_bind_template_child (widget_class, PpPrinterDnsEntry, remove_printer_menuitem);
+  gtk_widget_class_bind_template_child (widget_class, PpPrinterDnsEntry, web_link_btn);
+  gtk_widget_class_bind_template_child (widget_class, PpPrinterDnsEntry, close_btn);
 
 
   gtk_widget_class_bind_template_callback (widget_class, on_show_printer_details_dialog);
@@ -364,7 +388,7 @@ pp_printer_dns_entry_class_init (PpPrinterDnsEntryClass *klass)
 }
 
 PpPrinterDnsEntry *
-pp_printer_dns_entry_new (char* name, char* type, char* domain, char* hostname, char* port,
+pp_printer_dns_entry_new (char* name, char* type, char* domain, char* hostname, char* port, char* admin_url,
                       gboolean     is_authorized)
 {
   PpPrinterDnsEntry *self;
@@ -373,7 +397,7 @@ pp_printer_dns_entry_new (char* name, char* type, char* domain, char* hostname, 
 
 
   is_authorized = 1;
-  pp_printer_dns_entry_update (self,  name, type, domain, hostname, port, is_authorized);
+  pp_printer_dns_entry_update (self,  name, type, domain, hostname, port, admin_url,  is_authorized);
 
   return self;
 }

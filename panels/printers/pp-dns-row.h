@@ -26,7 +26,7 @@
 G_DECLARE_FINAL_TYPE (PpPrinterDnsEntry, pp_printer_dns_entry, PP, PRINTER_DNS_ENTRY, GtkListBoxRow)
 
 
-PpPrinterDnsEntry *pp_printer_dns_entry_new  (char* name, char* type, char* domain, char* hostname, char* port,
+PpPrinterDnsEntry *pp_printer_dns_entry_new  (char* name, char* type, char* domain, char* hostname, char* port,char* admin_url,
                                        gboolean    is_authorized);
 
 
@@ -46,5 +46,5 @@ GSList         *pp_printer_dns_entry_get_size_group_widgets (PpPrinterDnsEntry *
 
 void            pp_printer_dns_entry_update (PpPrinterDnsEntry *self,
                                          char* name, char* type, char* domain, char* hostname, char* port,
-                                         gboolean        is_authorized);
+                                         char* admin_url, gboolean        is_authorized);
 
